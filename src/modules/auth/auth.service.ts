@@ -130,6 +130,10 @@ export class AuthService {
 
     await this.updateRefreshToken(user.id, tokens.refresh_token);
 
+    await this.userRepository.update(user.id, {
+      lastLogin: new Date(),
+    });
+
     return tokens;
   }
 
@@ -171,5 +175,10 @@ export class AuthService {
     await this.updateRefreshToken(user.id, tokens.refresh_token);
 
     return tokens;
+  }
+
+  async logoutUser(userId: string): Promise<void> {
+    await this.userRepository.update(userId, { hashedRefreshToken: '' });
+    this.logger.log(`Cleared refresh token for user ${userId}`);
   }
 }

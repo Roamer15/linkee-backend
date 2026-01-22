@@ -1,5 +1,5 @@
 import { PassportStrategy } from '@nestjs/passport';
-import { Strategy, VerifyCallback } from 'passport-google-oauth20';
+import { Strategy } from 'passport-google-oauth20';
 import { Injectable } from '@nestjs/common';
 import { GoogleUserDto } from '../dto/google.dto';
 
@@ -38,8 +38,7 @@ export class GoogleStrategy extends PassportStrategy(
     accessToken: string,
     refreshToken: string,
     profile: ProfileData,
-    done: VerifyCallback,
-  ): void {
+  ): GoogleUserDto {
     const { name, emails, id } = profile;
 
     const user: GoogleUserDto = {
@@ -49,7 +48,6 @@ export class GoogleStrategy extends PassportStrategy(
       lastName: name.familyName,
       accessToken,
     };
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    done(null, user);
+    return user;
   }
 }
