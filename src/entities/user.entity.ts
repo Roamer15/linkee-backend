@@ -3,6 +3,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -18,8 +19,25 @@ export class User {
   @Column({ unique: true, length: 100 })
   email: string;
 
-  @Column({ name: 'pasword_hash', length: 255 })
+  @Column({ name: 'password_hash', length: 255, nullable: true })
   passwordHash: string;
+
+  @Column({ name: 'hashed_refresh_token', nullable: true })
+  hashedRefreshToken?: string;
+
+  @Index('idx_users_google_id')
+  @Column({
+    name: 'google_id',
+    type: 'varchar',
+    length: 255,
+    unique: true,
+    nullable: true,
+  })
+  googleId?: string;
+
+  @Index('idx_users_api_key')
+  @Column({ name: 'api_key', unique: true, length: 64 })
+  apiKey: string;
 
   @Column({
     name: 'plan_tier',
