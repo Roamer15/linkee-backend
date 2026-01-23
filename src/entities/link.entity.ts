@@ -40,8 +40,14 @@ export class Link {
   @Column({ length: 500, nullable: true })
   title?: string;
 
+  @Column({ name: 'qr_code_url', type: 'text', nullable: true })
+  qrCodeUrl: string;
+
   @Column({ name: 'click_count', type: 'bigint', default: 0 })
   clickCount: number;
+
+  @Column({ name: 'last_clicked_at', type: 'timestamp', nullable: true })
+  lastClickedAt: Date;
 
   @ManyToOne(() => User, { onDelete: 'SET NULL' })
   @JoinColumn({ name: 'created_by' })
