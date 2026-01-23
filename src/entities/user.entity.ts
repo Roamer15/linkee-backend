@@ -1,4 +1,4 @@
-import { PlanTier } from 'src/common/enum';
+import { PlanTier } from '../common/enum';
 import {
   Column,
   CreateDateColumn,

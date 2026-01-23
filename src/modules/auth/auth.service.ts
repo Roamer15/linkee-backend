@@ -5,13 +5,13 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { User } from 'src/entities/user.entity';
+import { User } from '../../entities/user.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
-import { LoggerService } from 'src/logger/logger.service';
+import { LoggerService } from '../../logger/logger.service';
 import { LoginUserDto } from './dto/login-user.dto';
 import { JwtService } from '@nestjs/jwt';
 import { GoogleUserDto } from './dto/google.dto';
@@ -137,7 +137,7 @@ export class AuthService {
     return tokens;
   }
 
-  async googleLogin(googleUser: GoogleUserDto) {
+  async googleLogin(googleUser: GoogleUserDto | null) {
     if (!googleUser) {
       throw new BadRequestException('No user from Google');
     }
