@@ -128,7 +128,7 @@ export class LinksService {
     }
   }
 
-  validateLink(link: Link): boolean {
+  async validateLink(link: Link): Promise<boolean> {
     if (!link.isActive) return false;
     if (link.expiresAt && new Date() > link.expiresAt) return false;
     return true;

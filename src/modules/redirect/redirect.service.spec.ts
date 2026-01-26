@@ -1,15 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { RedirectionService } from './redirection.service';
+import { RedirectService } from './redirect.service';
 
-describe('RedirectionService', () => {
-  let service: RedirectionService;
+describe('RedirectService', () => {
+  let service: RedirectService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [RedirectionService],
+      providers: [RedirectService],
     }).compile();
 
-    service = module.get<RedirectionService>(RedirectionService);
+    service = module.get<RedirectService>(RedirectService);
   });
 
   it('should be defined', () => {

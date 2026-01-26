@@ -13,16 +13,10 @@ import { AuthGuard } from '@nestjs/passport';
 import { LoginUserDto } from './dto/login-user.dto';
 import { Response } from 'express';
 import { GoogleUserDto } from './dto/google.dto';
+import { AuthenticatedRequest } from 'src/common/type';
 
 interface GoogleAuthRequest {
   user: GoogleUserDto;
-}
-
-interface AuthenticatedRequest extends Request {
-  user: {
-    id: string;
-    email: string;
-  };
 }
 
 @Controller('auth')

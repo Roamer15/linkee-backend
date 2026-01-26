@@ -3,3 +3,10 @@ export enum PlanTier {
   PRO = 'pro',
   ENTERPRISE = 'enterprise',
 }
+
+export enum DeviceType {
+  MOBILE = 'mobile',
+  DESKTOP = 'desktop',
+  TABLET = 'tablet',
+  BOT = 'bot',
+}
