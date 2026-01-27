@@ -15,6 +15,8 @@ import { Response } from 'express';
 import { GoogleUserDto } from './dto/google.dto';
 import { AuthenticatedRequest } from 'src/common/type';
 import { Throttle } from '@nestjs/throttler';
+import { VerifyOtpDto } from './dto/verify-otp.dto';
+import { ResendOtpDto } from './dto/resend-otp.dto';
 
 interface GoogleAuthRequest {
   user: GoogleUserDto;
@@ -27,6 +29,16 @@ export class AuthController {
   @Post('register')
   async register(@Body() dto: CreateUserDto) {
     return await this.authService.createUser(dto);
+  }
+
+  @Post('verify-otp')
+  async verifyOtp(@Body() dto: VerifyOtpDto) {
+    return await this.authService.verifyOtp(dto);
+  }
+
+  @Post('resend-otp')
+  async resendOtp(@Body() dto: ResendOtpDto) {
+    return await this.authService.resendOtp(dto.email);
   }
 
   @Post('login')

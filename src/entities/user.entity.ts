@@ -39,6 +39,12 @@ export class User {
   @Column({ name: 'api_key', unique: true, length: 64 })
   apiKey: string;
 
+  @Column({ name: 'is_email_verified', default: false })
+  isEmailVerified: boolean;
+
+  @Column({ name: 'email_verified_at', type: 'timestamp', nullable: true })
+  emailVerifiedAt?: Date;
+
   @Column({
     name: 'plan_tier',
     type: 'enum',

@@ -15,6 +15,9 @@ import { LoggerService } from '../../logger/logger.service';
 import { LoginUserDto } from './dto/login-user.dto';
 import { JwtService } from '@nestjs/jwt';
 import { GoogleUserDto } from './dto/google.dto';
+import { OtpService } from './otp.service';
+import { EmailService } from 'src/common/utils/email/email.service';
+import { VerifyOtpDto } from './dto/verify-otp.dto';
 
 interface Payload {
   sub: string;
@@ -27,6 +30,8 @@ export class AuthService {
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private jwtService: JwtService,
+    private otpService: OtpService,
+    private emailService: EmailService,
     private logger: LoggerService,
   ) {}
 
@@ -37,11 +42,11 @@ export class AuthService {
   private async generateToken(payload: Payload) {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
-        secret: 'SUPER_SECRET_KEY',
+        secret: process.env.SUPER_SECRET_KEY || 'SUPER_SECRET_KEY',
         expiresIn: '15m',
       }),
       this.jwtService.signAsync(payload, {
-        secret: 'REFRESH_SECRET_KEY',
+        secret: process.env.REFRESH_SECRET_KEY || 'REFRESH_SECRET_KEY',
         expiresIn: '7d',
       }),
     ]);
@@ -59,14 +64,27 @@ export class AuthService {
     });
   }
 
-  async createUser(dto: CreateUserDto): Promise<User> {
+  async createUser(
+    dto: CreateUserDto,
+  ): Promise<{ message: string; email: string }> {
     const existingUser = await this.userRepository.findOne({
       where: { email: dto.email },
     });
 
     if (existingUser) {
-      this.logger.error(`Email ${dto.email} already in use`);
-      throw new ConflictException('Email already in use, try another email');
+      if (existingUser.isEmailVerified) {
+        throw new ConflictException('Email already in use');
+      } else {
+        // User registered but never verified - resend OTP
+        const otp = this.otpService.generateOtp();
+        await this.otpService.storeOtp(dto.email, otp);
+        await this.emailService.sendVerificationEmail(dto.email, otp, dto.name);
+
+        return {
+          message: 'Verification email resent. Please check your inbox.',
+          email: dto.email,
+        };
+      }
     }
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
@@ -94,11 +112,94 @@ export class AuthService {
       email: dto.email,
       passwordHash: hashedPassword,
       apiKey: apiKey,
+      isEmailVerified: false, // Not verified yet
     });
 
-    this.logger.log(`New user ${JSON.stringify(newUser)}`);
+    this.logger.log(`New user ${JSON.stringify(newUser)} without verification`);
 
-    return await this.userRepository.save(newUser);
+    await this.userRepository.save(newUser);
+
+    const otp = this.otpService.generateOtp();
+    await this.otpService.storeOtp(dto.email, otp);
+    await this.emailService.sendVerificationEmail(dto.email, otp, dto.name);
+
+    this.logger.log(`User registered (unverified): ${dto.email}`);
+
+    return {
+      message:
+        'Registration successful! Please check your email for verification code.',
+      email: dto.email,
+    };
+  }
+
+  async verifyOtp(dto: VerifyOtpDto) {
+    const user = await this.userRepository.findOne({
+      where: { email: dto.email },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.isEmailVerified) {
+      throw new BadRequestException('Email already verified');
+    }
+
+    const isValid = await this.otpService.verifyOtp(dto.email, dto.otp);
+
+    if (!isValid) {
+      throw new BadRequestException('Invalid or expired OTP');
+    }
+
+    await this.userRepository.update(user.id, {
+      isEmailVerified: true,
+      emailVerifiedAt: new Date(),
+    });
+
+    await this.emailService.sendWelcomeEmail(user.email, user.name);
+
+    const payload = { sub: user.id, email: user.email };
+    const tokens = await this.generateToken(payload);
+    await this.updateRefreshToken(user.id, tokens.refresh_token);
+
+    this.logger.log(`User verified and logged in: ${user.email}`);
+
+    return {
+      message: 'Email verified successfully',
+      ...tokens,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isEmailVerified: true,
+      },
+    };
+  }
+
+  async resendOtp(email: string): Promise<{ message: string }> {
+    const user = await this.userRepository.findOne({
+      where: { email },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.isEmailVerified) {
+      throw new BadRequestException('Email already verified');
+    }
+
+    const ttl = await this.otpService.getOtpTtl(email);
+    if (ttl > 540) {
+      throw new BadRequestException('Please wait before requesting a new code');
+    }
+
+    const otp = await this.otpService.resendOtp(email);
+    await this.emailService.sendVerificationEmail(email, otp, user.name);
+
+    this.logger.log(`OTP resent to ${email}`);
+
+    return { message: 'Verification code resent' };
   }
 
   async loginUser(dto: LoginUserDto) {
@@ -109,6 +210,12 @@ export class AuthService {
       this.logger.log(`Email doesn't exist`);
       throw new NotFoundException(
         `User with email ${dto.email} doesn't exist. Try another email`,
+      );
+    }
+
+    if (!user.isEmailVerified) {
+      throw new UnauthorizedException(
+        'Please verify your email before logging in. Check your inbox for the verification code.',
       );
     }
 
@@ -154,6 +261,7 @@ export class AuthService {
       user = this.userRepository.create({
         email: googleUser.email,
         name: fullName,
+        isEmailVerified: true,
         googleId: googleUser.googleId,
         apiKey: this.generateApiKey(),
       });
@@ -163,6 +271,7 @@ export class AuthService {
     } else if (!user.googleId) {
       // Link existing email account to Google
       user.googleId = googleUser.googleId;
+      user.isEmailVerified = true;
       await this.userRepository.save(user);
       this.logger.log(`Linked existing account to Google: ${user.email}`);
     }
