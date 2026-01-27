@@ -3,13 +3,15 @@ import { LinksService } from './links.service';
 import { CreateLinkDto } from './dto/create-link.dto';
 import { AuthenticatedRequest } from 'src/common/type';
 import { AuthGuard } from '@nestjs/passport';
+import { Throttle } from '@nestjs/throttler';
 
-@Controller('links')
+@Controller('api/links')
 @UseGuards(AuthGuard('jwt'))
 export class LinksController {
   constructor(private readonly linksService: LinksService) {}
 
   @Post()
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   async createShortUrl(
     @Body() dto: CreateLinkDto,
     @Req() req: AuthenticatedRequest,

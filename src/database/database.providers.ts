@@ -6,16 +6,16 @@ export const databaseProviders = [
     provide: 'DATA_SOURCE',
     useFactory: async () => {
       const dataSource = new DataSource({
-        type: 'postgres', // Changed from 'mysql'
-        host: 'localhost',
-        port: 5432, // Default Postgres port
-        username: 'postgres', // Default Postgres user is usually 'postgres'
-        password: '557Py2mjs8.',
-        database: 'linkee_db',
+        type: 'postgres',
+        host: process.env.DB_HOST,
+        port: parseInt(process.env.DB_PORT || '5432', 10) || 5432, // Default Postgres port
+        username: process.env.DB_USER, // Default Postgres user is usually 'postgres'
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
         entities: [__dirname + '/../**/*.entity{.ts,.js}'],
         // Set to false in production to avoid data loss!
-        synchronize: false,
-        logging: process.env.NODE_ENV === 'developmernt',
+        synchronize: process.env.NODE_ENV === 'development' ? true : false,
+        logging: process.env.NODE_ENV === 'development',
       });
 
       return dataSource.initialize();

@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { LoggerModule } from './logger/logger.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -15,29 +14,37 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { BullBoardModule } from '@bull-board/nestjs';
 import { BullAdapter } from '@bull-board/api/bullAdapter';
 import { ExpressAdapter } from '@bull-board/express';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: 'localhost',
-      port: 5432,
-      username: 'ian',
-      password: '557Py2mjs8.',
-      database: 'linkeedb',
+      host: process.env.DB_HOST,
+      port: parseInt(process.env.DB_PORT || '5432', 10) || 5432,
+      username: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
       entities: [User, Link, AnalyticsEvent],
       synchronize: true,
     }),
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000, // Time window (60 seconds)
+        limit: 100, // Max 100 requests per 60 seconds
+      },
+    ]),
     AuthModule,
     LoggerModule,
     LinksModule,
     BullModule.forRoot({
       redis: {
-        host: 'localhost',
-        port: 6379,
+        host: process.env.REDIS_HOST || 'localhost',
+        port: parseInt(process.env.REDIS_PORT || '6379', 10) || 6379,
       },
     }),
     BullBoardModule.forRoot({
@@ -48,10 +55,16 @@ import { ExpressAdapter } from '@bull-board/express';
       name: 'analytics',
       adapter: BullAdapter,
     }),
-    RedirectModule,
     AnalyticsModule,
+    RedirectModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard, // ✅ Apply globally
+    },
+    AppService,
+  ],
 })
 export class AppModule {}

@@ -14,12 +14,13 @@ import { LoginUserDto } from './dto/login-user.dto';
 import { Response } from 'express';
 import { GoogleUserDto } from './dto/google.dto';
 import { AuthenticatedRequest } from 'src/common/type';
+import { Throttle } from '@nestjs/throttler';
 
 interface GoogleAuthRequest {
   user: GoogleUserDto;
 }
 
-@Controller('auth')
+@Controller('api/auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
@@ -29,6 +30,7 @@ export class AuthController {
   }
 
   @Post('login')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async login(@Body() dto: LoginUserDto) {
     return this.authService.loginUser(dto);
   }

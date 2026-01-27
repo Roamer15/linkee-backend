@@ -12,6 +12,12 @@ import { CreateLinkDto } from './dto/create-link.dto';
 import * as bcrypt from 'bcrypt';
 import Redis from 'ioredis';
 import { customAlphabet } from 'nanoid';
+import { QrCodeService } from 'src/common/utils/qr/qr-code.service';
+
+export interface LinkData {
+  savedLink: Link;
+  shortUrl: string;
+}
 
 @Injectable()
 export class LinksService {
@@ -23,6 +29,7 @@ export class LinksService {
     private linkRepository: Repository<Link>,
     @Inject('REDIS_CLIENT')
     private redisClient: Redis,
+    private qrCodeService: QrCodeService,
     private logger: LoggerService,
   ) {
     const alphabet =
@@ -35,7 +42,7 @@ export class LinksService {
     await this.redisClient.setex(cacheKey, 86400, JSON.stringify(link)); // 24h TTL
   }
 
-  async createLink(dto: CreateLinkDto, userId: string): Promise<Link> {
+  async createLink(dto: CreateLinkDto, userId: string): Promise<LinkData> {
     let shortCode!: string;
     let attempts = 0;
     const maxAttempts = 5;
@@ -89,11 +96,19 @@ export class LinksService {
 
     const savedLink = await this.linkRepository.save(link);
 
+    const fullUrl = `${process.env.BASE_URL}/${savedLink.shortCode}`;
+    const qrCodeUrl = await this.qrCodeService.generateQrCode(
+      fullUrl,
+      savedLink.shortCode,
+    );
+
+    savedLink.qrCodeUrl = qrCodeUrl;
+    await this.linkRepository.update(savedLink.id, { qrCodeUrl });
+
     await this.redisClient.sadd(this.SHORT_CODE_SET_KEY, shortCode);
     await this.cacheLink(savedLink);
     this.logger.log(`Link created: ${shortCode} for user ${userId}`);
-
-    return savedLink;
+    return { savedLink, shortUrl: fullUrl };
   }
 
   async getLinkByShortCode(shortCode: string): Promise<Link> {
