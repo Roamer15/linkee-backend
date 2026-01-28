@@ -10,7 +10,7 @@ export const databaseProviders = [
         host: process.env.DB_HOST,
         port: parseInt(process.env.DB_PORT || '5432', 10) || 5432, // Default Postgres port
         username: process.env.DB_USER, // Default Postgres user is usually 'postgres'
-        password: process.env.DB_PASSWORD,
+        password: `${process.env.DB_PASSWORD}`,
         database: process.env.DB_NAME,
         entities: [__dirname + '/../**/*.entity{.ts,.js}'],
         // Set to false in production to avoid data loss!
