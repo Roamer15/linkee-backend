@@ -290,4 +290,37 @@ export class AuthService {
     await this.userRepository.update(userId, { hashedRefreshToken: '' });
     this.logger.log(`Cleared refresh token for user ${userId}`);
   }
+
+  async refreshTokens(
+    refreshToken: string,
+  ): Promise<{ access_token: string; refresh_token: string }> {
+    try {
+      const payload = await this.jwtService.verifyAsync<Payload>(refreshToken, {
+        secret: process.env.REFRESH_SECRET_KEY || 'REFRESH_SECRET_KEY',
+      });
+
+      const user = await this.userRepository.findOne({
+        where: { id: payload.sub },
+      });
+
+      if (!user || !user.hashedRefreshToken) {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+
+      const isValid = await bcrypt.compare(refreshToken, user.hashedRefreshToken);
+      if (!isValid) {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+
+      const newPayload = { sub: user.id, email: user.email };
+      const tokens = await this.generateToken(newPayload);
+      await this.updateRefreshToken(user.id, tokens.refresh_token);
+
+      this.logger.log(`Tokens refreshed for user ${user.email}`);
+
+      return tokens;
+    } catch {
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+  }
 }

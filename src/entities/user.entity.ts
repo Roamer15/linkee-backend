@@ -22,6 +22,9 @@ export class User {
   @Column({ name: 'password_hash', length: 255, nullable: true })
   passwordHash: string;
 
+  @Column({ name: 'profile_pic', length: 255, nullable: true })
+  profilePic: string;
+
   @Column({ name: 'hashed_refresh_token', nullable: true })
   hashedRefreshToken?: string;
 

@@ -6,6 +6,7 @@ import { Link } from 'src/entities/link.entity';
 import { LoggerModule } from 'src/logger/logger.module';
 import { RedisModule } from 'src/common/utils/redis/redis.module';
 import { QrCodeModule } from 'src/common/utils/qr/qr-code.module';
+import { MetadataExtractorService } from './services/metadata-extractor.service';
 
 @Module({
   imports: [
@@ -15,7 +16,7 @@ import { QrCodeModule } from 'src/common/utils/qr/qr-code.module';
     LoggerModule,
   ],
   controllers: [LinksController],
-  providers: [LinksService],
+  providers: [LinksService, MetadataExtractorService],
   exports: [LinksService],
 })
 export class LinksModule {}

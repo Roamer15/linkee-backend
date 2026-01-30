@@ -8,6 +8,17 @@ async function bootstrap() {
   const linksService = app.get(LinksService);
   await linksService.syncShortCodesToRedis();
 
+  app.enableCors({
+    origin: [
+      'https://linkee.app',
+      'https://www.linkee.app',
+      'http://localhost:3001', // Development
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
+  });
+
   await app.listen(process.env.PORT ?? 3000);
 }
 void bootstrap();

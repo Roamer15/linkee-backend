@@ -13,6 +13,7 @@ import * as bcrypt from 'bcrypt';
 import Redis from 'ioredis';
 import { customAlphabet } from 'nanoid';
 import { QrCodeService } from 'src/common/utils/qr/qr-code.service';
+import { MetadataExtractorService } from './services/metadata-extractor.service';
 
 export interface LinkData {
   savedLink: Link;
@@ -30,6 +31,7 @@ export class LinksService {
     @Inject('REDIS_CLIENT')
     private redisClient: Redis,
     private qrCodeService: QrCodeService,
+    private metadataExtractorService: MetadataExtractorService,
     private logger: LoggerService,
   ) {
     const alphabet =
@@ -85,12 +87,18 @@ export class LinksService {
       passwordHash = await bcrypt.hash(dto.password, 10);
     }
 
+    // Extract metadata for preview image
+    const metadata = await this.metadataExtractorService.extractMetadata(
+      dto.originalUrl,
+    );
+
     const link = this.linkRepository.create({
       shortCode: shortCode,
       originalUrl: dto.originalUrl,
       passwordHash: passwordHash,
       expiresAt: dto.expiresAt ? new Date(dto.expiresAt) : undefined,
-      title: dto.title,
+      title: dto.title || metadata.title,
+      previewImage: metadata.image,
       createdBy: { id: userId },
     });
 
@@ -126,6 +134,15 @@ export class LinksService {
     await this.cacheLink(link);
 
     return link;
+  }
+
+  async getLinksByUser(userId: string): Promise<Link[]> {
+    const links = await this.linkRepository.find({
+      where: { createdBy: { id: userId } },
+      order: { createdAt: 'DESC' },
+    });
+
+    return links;
   }
 
   async incrementClickCount(linkId: string): Promise<void> {

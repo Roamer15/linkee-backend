@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import { LinksService } from './links.service';
 import { CreateLinkDto } from './dto/create-link.dto';
 import { AuthenticatedRequest } from 'src/common/type';
@@ -18,5 +18,11 @@ export class LinksController {
   ) {
     const userId = req.user.id;
     return this.linksService.createLink(dto, userId);
+  }
+
+  @Get()
+  async getAllLinks(@Req() req: AuthenticatedRequest) {
+    const userId = req.user.id;
+    return this.linksService.getLinksByUser(userId);
   }
 }

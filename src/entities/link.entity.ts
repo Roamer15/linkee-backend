@@ -40,6 +40,9 @@ export class Link {
   @Column({ length: 500, nullable: true })
   title?: string;
 
+  @Column({ name: 'preview_image', type: 'text', nullable: true })
+  previewImage?: string;
+
   @Column({ name: 'qr_code_url', type: 'text', nullable: true })
   qrCodeUrl: string;
 
