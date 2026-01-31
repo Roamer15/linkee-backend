@@ -16,6 +16,7 @@ import { BullAdapter } from '@bull-board/api/bullAdapter';
 import { ExpressAdapter } from '@bull-board/express';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import { QrCodeModule } from './common/utils/qr/qr-code.module';
 
 @Module({
   imports: [
@@ -57,6 +58,7 @@ import { APP_GUARD } from '@nestjs/core';
     }),
     AnalyticsModule,
     RedirectModule,
+    QrCodeModule,
   ],
   controllers: [],
   providers: [

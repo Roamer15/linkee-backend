@@ -12,7 +12,6 @@ import { CreateLinkDto } from './dto/create-link.dto';
 import * as bcrypt from 'bcrypt';
 import Redis from 'ioredis';
 import { customAlphabet } from 'nanoid';
-import { QrCodeService } from 'src/common/utils/qr/qr-code.service';
 import { MetadataExtractorService } from './services/metadata-extractor.service';
 
 export interface LinkData {
@@ -30,7 +29,6 @@ export class LinksService {
     private linkRepository: Repository<Link>,
     @Inject('REDIS_CLIENT')
     private redisClient: Redis,
-    private qrCodeService: QrCodeService,
     private metadataExtractorService: MetadataExtractorService,
     private logger: LoggerService,
   ) {
@@ -103,15 +101,7 @@ export class LinksService {
     });
 
     const savedLink = await this.linkRepository.save(link);
-
     const fullUrl = `${process.env.BASE_URL}/${savedLink.shortCode}`;
-    const qrCodeUrl = await this.qrCodeService.generateQrCode(
-      fullUrl,
-      savedLink.shortCode,
-    );
-
-    savedLink.qrCodeUrl = qrCodeUrl;
-    await this.linkRepository.update(savedLink.id, { qrCodeUrl });
 
     await this.redisClient.sadd(this.SHORT_CODE_SET_KEY, shortCode);
     await this.cacheLink(savedLink);

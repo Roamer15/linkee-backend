@@ -44,7 +44,7 @@ export class Link {
   previewImage?: string;
 
   @Column({ name: 'qr_code_url', type: 'text', nullable: true })
-  qrCodeUrl: string;
+  qrCodeUrl?: string;
 
   @Column({ name: 'click_count', type: 'bigint', default: 0 })
   clickCount: number;

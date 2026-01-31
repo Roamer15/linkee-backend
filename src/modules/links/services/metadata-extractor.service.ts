@@ -19,8 +19,10 @@ export class MetadataExtractorService {
         description: result.ogDescription || result.twitterDescription,
       };
     } catch (error) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      this.logger.warn(`Failed to extract metadata for ${url}:`, error.message);
+      this.logger.warn(
+        `Failed to extract metadata for ${url}:`,
+        error instanceof Error ? error.message : 'Unknown error',
+      );
       return {};
     }
   }
