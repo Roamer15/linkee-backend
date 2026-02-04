@@ -241,7 +241,19 @@ export class AuthService {
       lastLogin: new Date(),
     });
 
-    return tokens;
+    this.logger.log(`User logged in: ${user.email}`);
+
+    return {
+      ...tokens,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isVerified: user.isEmailVerified,
+        plan: user.planTier || 'free',
+        createdAt: user.createdAt,
+      },
+    };
   }
 
   async googleLogin(googleUser: GoogleUserDto | null) {
@@ -307,7 +319,10 @@ export class AuthService {
         throw new UnauthorizedException('Invalid refresh token');
       }
 
-      const isValid = await bcrypt.compare(refreshToken, user.hashedRefreshToken);
+      const isValid = await bcrypt.compare(
+        refreshToken,
+        user.hashedRefreshToken,
+      );
       if (!isValid) {
         throw new UnauthorizedException('Invalid refresh token');
       }
