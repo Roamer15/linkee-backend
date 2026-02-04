@@ -180,6 +180,24 @@ export class LinksService {
     return updatedLink;
   }
 
+  async deleteLink(linkId: string, userId: string): Promise<void> {
+    const link = await this.linkRepository.findOne({
+      where: { id: linkId, createdBy: { id: userId } },
+    });
+
+    if (!link) {
+      throw new NotFoundException('Link not found or access denied');
+    }
+
+    // Remove from cache
+    await this.redisClient.del(`link:${link.shortCode}`);
+    // Remove from short codes set
+    await this.redisClient.srem(this.SHORT_CODE_SET_KEY, link.shortCode);
+
+    await this.linkRepository.remove(link);
+    this.logger.log(`Link deleted: ${link.shortCode} by user ${userId}`);
+  }
+
   async incrementClickCount(linkId: string, visitorIp?: string): Promise<void> {
     // Check if this visitor has already been counted (24h window)
     if (visitorIp) {

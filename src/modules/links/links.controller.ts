@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -44,5 +45,12 @@ export class LinksController {
   ) {
     const userId = req.user.id;
     return this.linksService.updateLink(id, userId, dto);
+  }
+
+  @Delete(':id')
+  async deleteLink(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+    const userId = req.user.id;
+    await this.linksService.deleteLink(id, userId);
+    return { message: 'Link deleted successfully' };
   }
 }
