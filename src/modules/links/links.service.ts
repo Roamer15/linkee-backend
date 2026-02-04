@@ -9,6 +9,7 @@ import { Link } from 'src/entities/link.entity';
 import { LoggerService } from 'src/logger/logger.service';
 import { Repository } from 'typeorm';
 import { CreateLinkDto } from './dto/create-link.dto';
+import { UpdateLinkDto } from './dto/update-link.dto';
 import * as bcrypt from 'bcrypt';
 import Redis from 'ioredis';
 import { customAlphabet } from 'nanoid';
@@ -135,7 +136,65 @@ export class LinksService {
     return links;
   }
 
-  async incrementClickCount(linkId: string): Promise<void> {
+  async updateLink(
+    linkId: string,
+    userId: string,
+    dto: UpdateLinkDto,
+  ): Promise<Link> {
+    const link = await this.linkRepository.findOne({
+      where: { id: linkId, createdBy: { id: userId } },
+    });
+
+    if (!link) {
+      throw new NotFoundException('Link not found or access denied');
+    }
+
+    // If URL changed, fetch new preview image
+    if (dto.originalUrl && dto.originalUrl !== link.originalUrl) {
+      const metadata = await this.metadataExtractorService.extractMetadata(
+        dto.originalUrl,
+      );
+      link.originalUrl = dto.originalUrl;
+      link.previewImage = metadata.image;
+      // Update title only if not explicitly provided
+      if (!dto.title && metadata.title) {
+        link.title = metadata.title;
+      }
+    }
+
+    if (dto.title !== undefined) {
+      link.title = dto.title;
+    }
+
+    if (dto.isActive !== undefined) {
+      link.isActive = dto.isActive;
+    }
+
+    const updatedLink = await this.linkRepository.save(link);
+
+    // Invalidate cache
+    await this.redisClient.del(`link:${link.shortCode}`);
+    await this.cacheLink(updatedLink);
+
+    this.logger.log(`Link updated: ${link.shortCode} by user ${userId}`);
+    return updatedLink;
+  }
+
+  async incrementClickCount(linkId: string, visitorIp?: string): Promise<void> {
+    // Check if this visitor has already been counted (24h window)
+    if (visitorIp) {
+      const visitorKey = `visitor:${linkId}:${visitorIp}`;
+      const alreadyCounted = await this.redisClient.get(visitorKey);
+
+      if (alreadyCounted) {
+        // Visitor already counted, skip incrementing
+        return;
+      }
+
+      // Mark visitor as counted for 24 hours
+      await this.redisClient.setex(visitorKey, 86400, '1');
+    }
+
     // Increment in Redis first (fast)
     const counterKey = `clicks:${linkId}`;
     const count = await this.redisClient.incr(counterKey);

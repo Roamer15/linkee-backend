@@ -1,6 +1,16 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { LinksService } from './links.service';
 import { CreateLinkDto } from './dto/create-link.dto';
+import { UpdateLinkDto } from './dto/update-link.dto';
 import { AuthenticatedRequest } from 'src/common/type';
 import { AuthGuard } from '@nestjs/passport';
 import { Throttle } from '@nestjs/throttler';
@@ -24,5 +34,15 @@ export class LinksController {
   async getAllLinks(@Req() req: AuthenticatedRequest) {
     const userId = req.user.id;
     return this.linksService.getLinksByUser(userId);
+  }
+
+  @Patch(':id')
+  async updateLink(
+    @Param('id') id: string,
+    @Body() dto: UpdateLinkDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const userId = req.user.id;
+    return this.linksService.updateLink(id, userId, dto);
   }
 }

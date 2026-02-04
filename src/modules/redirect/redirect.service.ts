@@ -59,9 +59,9 @@ export class RedirectService {
       timestamp: new Date(),
     });
 
-    // Async: Increment counter
+    // Async: Increment counter (unique visitors only)
     await this.linkService
-      .incrementClickCount(link.id)
+      .incrementClickCount(link.id, context?.ip)
       .catch((err) => console.error('Click count error:', err));
 
     return link.originalUrl;
