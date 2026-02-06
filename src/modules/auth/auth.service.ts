@@ -295,7 +295,7 @@ export class AuthService {
 
     await this.updateRefreshToken(user.id, tokens.refresh_token);
 
-    return tokens;
+    return { user, tokens };
   }
 
   async logoutUser(userId: string): Promise<void> {
