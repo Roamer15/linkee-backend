@@ -18,7 +18,6 @@ import { Throttle } from '@nestjs/throttler';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { ResendOtpDto } from './dto/resend-otp.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
-import { stringify } from 'querystring';
 
 interface GoogleAuthRequest {
   user: GoogleUserDto;
@@ -67,14 +66,14 @@ export class AuthController {
       id: tokens.user.id,
       email: tokens.user.email,
       name: tokens.user.name,
-      plan: tokens.user.planTier,
-      createdAt: tokens.user.createdAt.toISOString(),
+      plan: tokens.user.planTier || 'free',
+      createdAt: tokens.user.createdAt,
     };
 
     // Redirect to frontend with tokens
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
     res.redirect(
-      `${frontendUrl}/callback?access_token=${tokens.tokens.access_token}&refresh_token=${tokens.tokens.refresh_token}&user=${stringify(user)}`,
+      `${frontendUrl}/callback?access_token=${tokens.tokens.access_token}&refresh_token=${tokens.tokens.refresh_token}&user=${encodeURIComponent(JSON.stringify(user))}`,
     );
   }
 
